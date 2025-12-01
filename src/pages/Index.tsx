@@ -6,9 +6,10 @@ import { XPBar } from "@/components/XPBar";
 import { StatsCard } from "@/components/StatsCard";
 import { AIMentor } from "@/components/AIMentor";
 import { AchievementBadge } from "@/components/AchievementBadge";
-import { EnergyCheckIn, EnergyData } from "@/components/EnergyCheckIn";
 import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
-import { Flame, Target, Trophy, Plus, Sparkles } from "lucide-react";
+import { Navigation } from "@/components/Navigation";
+import { Flame, Target, Trophy, Plus, Battery } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Task {
   id: string;
@@ -29,9 +30,14 @@ const Index = () => {
     { id: "6", title: "Meditar 10 minutos", xp: 40, category: "Bienestar", completed: false, difficulty: "easy" },
   ]);
 
-  const [energyData, setEnergyData] = useState<EnergyData | undefined>(undefined);
-
   const [newTask, setNewTask] = useState("");
+
+  // Simulated energy data - in a real app this would come from context/state management
+  const [energyData] = useState({
+    energyLevel: 4 as const,
+    sleepQuality: "good" as const,
+    mood: "motivated" as const,
+  });
 
   const achievements = [
     { id: "1", name: "First Win", icon: "trophy" as const, unlocked: true },
@@ -63,30 +69,9 @@ const Index = () => {
   const totalXP = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-primary shadow-glow">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  TaskMind
-                </h1>
-                <p className="text-sm text-muted-foreground">Potencia tu productividad</p>
-              </div>
-            </div>
-            
-            <Button className="bg-gradient-accent text-accent-foreground hover:shadow-glow-accent transition-all duration-300">
-              <Trophy className="w-4 h-4 mr-2" />
-              Ver Recompensas
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Navigation */}
+      <Navigation />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -144,32 +129,49 @@ const Index = () => {
             </Card>
 
             {/* Task List */}
-            {energyData ? (
-              <AdaptiveTaskList 
-                tasks={tasks} 
-                energyData={energyData} 
-                onComplete={handleCompleteTask}
-              />
-            ) : (
-              <Card className="p-8 bg-gradient-card border-border text-center">
-                <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary opacity-50" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Configura tu energía del día
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  Completa el check-in de energía para que la IA adapte tus tareas
-                </p>
-              </Card>
-            )}
+            <AdaptiveTaskList 
+              tasks={tasks} 
+              energyData={energyData} 
+              onComplete={handleCompleteTask}
+            />
           </div>
 
           {/* Right Column - Energy & AI */}
           <div className="space-y-6">
-            {/* Energy Check-In */}
-            <EnergyCheckIn 
-              onSubmit={setEnergyData} 
-              currentEnergy={energyData}
-            />
+            {/* Energy Quick Status */}
+            <Card className="p-6 bg-gradient-card border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Battery className="w-5 h-5 text-success" />
+                  Tu Energía
+                </h3>
+                <Link to="/energy">
+                  <Button variant="ghost" size="sm" className="text-primary">
+                    Actualizar
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex gap-1 mb-2">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-3 flex-1 rounded-full transition-all ${
+                          level <= energyData.energyLevel
+                            ? "bg-success"
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Modo Sprint activo • +50% XP
+                  </p>
+                </div>
+                <div className="text-3xl">⚡</div>
+              </div>
+            </Card>
 
             {/* AI Mentor */}
             <AIMentor />
