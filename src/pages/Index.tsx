@@ -3,21 +3,41 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { XPBar } from "@/components/XPBar";
-import { TaskCard } from "@/components/TaskCard";
 import { StatsCard } from "@/components/StatsCard";
 import { AIMentor } from "@/components/AIMentor";
 import { AchievementBadge } from "@/components/AchievementBadge";
-import { Flame, Target, Trophy, Plus, Sparkles } from "lucide-react";
+import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
+import { Navigation } from "@/components/Navigation";
+import { Flame, Target, Trophy, Plus, Battery } from "lucide-react";
+import { Link } from "react-router-dom";
+
+interface Task {
+  id: string;
+  title: string;
+  xp: number;
+  category: string;
+  completed: boolean;
+  difficulty?: "easy" | "medium" | "hard";
+}
 
 const Index = () => {
-  const [tasks, setTasks] = useState([
-    { id: "1", title: "Complete morning workout", xp: 50, category: "Health", completed: false },
-    { id: "2", title: "Review project proposal", xp: 100, category: "Work", completed: false },
-    { id: "3", title: "Read for 30 minutes", xp: 75, category: "Learning", completed: true },
-    { id: "4", title: "Plan tomorrow's tasks", xp: 50, category: "Planning", completed: false },
+  const [tasks, setTasks] = useState<Task[]>([
+    { id: "1", title: "Completar workout matutino", xp: 50, category: "Salud", completed: false, difficulty: "medium" },
+    { id: "2", title: "Revisar propuesta de proyecto", xp: 100, category: "Trabajo", completed: false, difficulty: "hard" },
+    { id: "3", title: "Leer 30 minutos", xp: 75, category: "Aprendizaje", completed: true, difficulty: "easy" },
+    { id: "4", title: "Planificar tareas de mañana", xp: 50, category: "Planificación", completed: false, difficulty: "easy" },
+    { id: "5", title: "Responder emails importantes", xp: 60, category: "Trabajo", completed: false, difficulty: "medium" },
+    { id: "6", title: "Meditar 10 minutos", xp: 40, category: "Bienestar", completed: false, difficulty: "easy" },
   ]);
 
   const [newTask, setNewTask] = useState("");
+
+  // Simulated energy data - in a real app this would come from context/state management
+  const [energyData] = useState({
+    energyLevel: 4 as const,
+    sleepQuality: "good" as const,
+    mood: "motivated" as const,
+  });
 
   const achievements = [
     { id: "1", name: "First Win", icon: "trophy" as const, unlocked: true },
@@ -49,30 +69,9 @@ const Index = () => {
   const totalXP = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-primary shadow-glow">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  TaskMind
-                </h1>
-                <p className="text-sm text-muted-foreground">Level up your productivity</p>
-              </div>
-            </div>
-            
-            <Button className="bg-gradient-accent text-accent-foreground hover:shadow-glow-accent transition-all duration-300">
-              <Trophy className="w-4 h-4 mr-2" />
-              View Rewards
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Navigation */}
+      <Navigation />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
@@ -88,33 +87,33 @@ const Index = () => {
             <div className="grid sm:grid-cols-3 gap-4">
               <StatsCard
                 icon={Flame}
-                title="Current Streak"
-                value="5 days"
-                subtitle="Keep it going!"
+                title="Racha Actual"
+                value="5 días"
+                subtitle="¡Sigue así!"
                 gradient="accent"
               />
               <StatsCard
                 icon={Target}
-                title="Tasks Completed"
+                title="Tareas Completadas"
                 value={completedTasks}
-                subtitle={`${tasks.length - completedTasks} remaining`}
+                subtitle={`${tasks.length - completedTasks} restantes`}
                 gradient="success"
               />
               <StatsCard
                 icon={Trophy}
-                title="Total XP"
+                title="XP Total"
                 value={totalXP}
-                subtitle="This week"
+                subtitle="Esta semana"
                 gradient="primary"
               />
             </div>
 
             {/* Add Task */}
             <Card className="p-6 bg-gradient-card border-border">
-              <h2 className="text-xl font-semibold mb-4 text-foreground">Add New Quest</h2>
+              <h2 className="text-xl font-semibold mb-4 text-foreground">Nueva Misión</h2>
               <div className="flex gap-2">
                 <Input
-                  placeholder="What do you want to accomplish?"
+                  placeholder="¿Qué quieres lograr hoy?"
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
@@ -122,7 +121,7 @@ const Index = () => {
                 />
                 <Button 
                   onClick={handleAddTask}
-                  className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300"
+                  className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300"
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -130,20 +129,50 @@ const Index = () => {
             </Card>
 
             {/* Task List */}
-            <div className="space-y-3">
-              <h2 className="text-xl font-semibold text-foreground">Today's Quests</h2>
-              {tasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onComplete={handleCompleteTask}
-                />
-              ))}
-            </div>
+            <AdaptiveTaskList 
+              tasks={tasks} 
+              energyData={energyData} 
+              onComplete={handleCompleteTask}
+            />
           </div>
 
-          {/* Right Column - Stats & AI */}
+          {/* Right Column - Energy & AI */}
           <div className="space-y-6">
+            {/* Energy Quick Status */}
+            <Card className="p-6 bg-gradient-card border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Battery className="w-5 h-5 text-success" />
+                  Tu Energía
+                </h3>
+                <Link to="/energy">
+                  <Button variant="ghost" size="sm" className="text-primary">
+                    Actualizar
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex gap-1 mb-2">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className={`h-3 flex-1 rounded-full transition-all ${
+                          level <= energyData.energyLevel
+                            ? "bg-success"
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Modo Sprint activo • +50% XP
+                  </p>
+                </div>
+                <div className="text-3xl">⚡</div>
+              </div>
+            </Card>
+
             {/* AI Mentor */}
             <AIMentor />
 
@@ -151,7 +180,7 @@ const Index = () => {
             <Card className="p-6 bg-gradient-card border-border">
               <h3 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-accent" />
-                Achievements
+                Logros
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 {achievements.map(achievement => (
