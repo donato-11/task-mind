@@ -50,7 +50,7 @@ const Energy = () => {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Energy Check-In */}
             <div className="space-y-6">
-              <EnergyCheckIn onSubmit={setEnergyData} currentEnergy={energyData} />
+              <EnergyCheckIn onSubmit={setEnergyData} currentEnergy={energyData} navigateOnSubmit={true} />
 
               {/* Current Mode */}
               {currentMode && (

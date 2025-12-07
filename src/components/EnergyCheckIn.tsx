@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Battery, Moon, Smile, Zap, BatteryLow, BatteryMedium, BatteryFull } from "lucide-react";
@@ -16,6 +17,7 @@ export interface EnergyData {
 interface EnergyCheckInProps {
   onSubmit: (data: EnergyData) => void;
   currentEnergy?: EnergyData;
+  navigateOnSubmit?: boolean;
 }
 
 const energyOptions = [
@@ -40,15 +42,22 @@ const moodOptions: { value: Mood; label: string; emoji: string }[] = [
   { value: "energized", label: "Energizado", emoji: "⚡" },
 ];
 
-export const EnergyCheckIn = ({ onSubmit, currentEnergy }: EnergyCheckInProps) => {
+export const EnergyCheckIn = ({ onSubmit, currentEnergy, navigateOnSubmit = false }: EnergyCheckInProps) => {
   const [energyLevel, setEnergyLevel] = useState<EnergyLevel>(currentEnergy?.energyLevel || 3);
   const [sleepQuality, setSleepQuality] = useState<SleepQuality>(currentEnergy?.sleepQuality || "good");
   const [mood, setMood] = useState<Mood>(currentEnergy?.mood || "neutral");
   const [isExpanded, setIsExpanded] = useState(!currentEnergy);
+  const navigate = useNavigate();
 
   const handleSubmit = () => {
-    onSubmit({ energyLevel, sleepQuality, mood });
+    const data = { energyLevel, sleepQuality, mood };
+    onSubmit(data);
     setIsExpanded(false);
+    
+    if (navigateOnSubmit) {
+      // Navigate to home with energy data in state
+      navigate("/", { state: { energyData: data } });
+    }
   };
 
   const getEnergyStatus = () => {
