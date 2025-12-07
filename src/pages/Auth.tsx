@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +14,7 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +35,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute top-4 left-4 gap-2 text-muted-foreground hover:text-foreground"
+        onClick={() => navigate(-1)}
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Regresar
+      </Button>
+
       <div className="w-full max-w-md space-y-8">
         {/* Logo/Brand */}
         <div className="text-center">

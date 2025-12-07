@@ -62,7 +62,11 @@ const Social = () => {
   const [activeTab, setActiveTab] = useState<"leaderboard" | "challenges" | "friends">("leaderboard");
   const [isCreateChallengeOpen, setIsCreateChallengeOpen] = useState(false);
   const [isAddFriendOpen, setIsAddFriendOpen] = useState(false);
+  const [isChallengeOpen, setIsChallengeOpen] = useState(false);
+  const [isDuelOpen, setIsDuelOpen] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [friendSearch, setFriendSearch] = useState("");
+  const [duelDuration, setDuelDuration] = useState("7");
   const [challengeForm, setChallengeForm] = useState({
     title: "",
     description: "",
@@ -199,6 +203,29 @@ const Social = () => {
     });
     setIsAddFriendOpen(false);
     setFriendSearch("");
+  };
+
+  const handleChallengeFriend = (friend: Friend) => {
+    setSelectedFriend(friend);
+    setIsChallengeOpen(true);
+  };
+
+  const handleSendChallenge = () => {
+    if (!selectedFriend) return;
+    toast({
+      title: "¡Reto enviado!",
+      description: `Has retado a ${selectedFriend.name}`,
+    });
+    setIsChallengeOpen(false);
+    setSelectedFriend(null);
+  };
+
+  const handleStartDuel = () => {
+    toast({
+      title: "¡Duelo iniciado!",
+      description: `Duelo de ${duelDuration} días creado. ¡Selecciona tu oponente!`,
+    });
+    setIsDuelOpen(false);
   };
 
   return (
@@ -480,7 +507,12 @@ const Social = () => {
                         </span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="gap-1"
+                      onClick={() => handleChallengeFriend(friend)}
+                    >
                       Retar
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -500,7 +532,11 @@ const Social = () => {
                       Reta a un amigo y compite por XP esta semana
                     </p>
                   </div>
-                  <Button variant="secondary" className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+                  <Button 
+                    variant="secondary" 
+                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    onClick={() => setIsDuelOpen(true)}
+                  >
                     Iniciar Duelo
                   </Button>
                 </div>
@@ -688,6 +724,162 @@ const Social = () => {
             </Button>
             <Button onClick={handleSendFriendRequest} className="bg-gradient-primary text-primary-foreground">
               Enviar Solicitud
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Challenge Friend Dialog */}
+      <Dialog open={isChallengeOpen} onOpenChange={setIsChallengeOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="w-5 h-5 text-primary" />
+              Retar a {selectedFriend?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Elige el tipo de reto que quieres enviar
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {selectedFriend && (
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                <span className="text-3xl">{selectedFriend.avatar}</span>
+                <div>
+                  <p className="font-medium text-foreground">{selectedFriend.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedFriend.xpWeekly} XP esta semana
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Tipo de reto</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 rounded-lg border-2 border-primary bg-primary/10 cursor-pointer">
+                  <Swords className="w-6 h-6 text-primary mb-2" />
+                  <p className="font-medium text-foreground text-sm">Competición</p>
+                  <p className="text-xs text-muted-foreground">Quien gane más XP</p>
+                </div>
+                <div className="p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-colors">
+                  <Target className="w-6 h-6 text-success mb-2" />
+                  <p className="font-medium text-foreground text-sm">Colaborativo</p>
+                  <p className="text-xs text-muted-foreground">Meta compartida</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duración</Label>
+              <Select defaultValue="7">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 días</SelectItem>
+                  <SelectItem value="7">1 semana</SelectItem>
+                  <SelectItem value="14">2 semanas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="p-3 bg-accent/10 rounded-lg">
+              <p className="text-sm text-accent font-medium">🎁 Recompensa: +150 XP</p>
+              <p className="text-xs text-muted-foreground">El ganador recibe XP bonus</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChallengeOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSendChallenge} className="bg-gradient-primary text-primary-foreground">
+              Enviar Reto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Start Duel Dialog */}
+      <Dialog open={isDuelOpen} onOpenChange={setIsDuelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Swords className="w-5 h-5 text-destructive" />
+              Iniciar Duelo
+            </DialogTitle>
+            <DialogDescription>
+              Compite 1 vs 1 por XP con un amigo
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="text-center py-4">
+              <div className="inline-flex items-center gap-4">
+                <div className="text-center">
+                  <span className="text-4xl">⭐</span>
+                  <p className="text-sm font-medium text-foreground mt-1">Tú</p>
+                </div>
+                <Swords className="w-8 h-8 text-destructive" />
+                <div className="text-center">
+                  <span className="text-4xl">❓</span>
+                  <p className="text-sm font-medium text-muted-foreground mt-1">Oponente</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Selecciona oponente</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Elige un amigo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {friends.filter(f => f.name !== "Tú").map((friend) => (
+                    <SelectItem key={friend.id} value={friend.id}>
+                      {friend.avatar} {friend.name} ({friend.xpWeekly} XP)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Duración del duelo</Label>
+              <Select value={duelDuration} onValueChange={setDuelDuration}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 días</SelectItem>
+                  <SelectItem value="7">1 semana</SelectItem>
+                  <SelectItem value="14">2 semanas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-success/10 rounded-lg text-center">
+                <Gift className="w-5 h-5 text-success mx-auto mb-1" />
+                <p className="text-xs font-medium text-success">Ganador</p>
+                <p className="text-sm font-bold text-foreground">+300 XP</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg text-center">
+                <Trophy className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+                <p className="text-xs font-medium text-muted-foreground">Perdedor</p>
+                <p className="text-sm font-bold text-foreground">+50 XP</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDuelOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleStartDuel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ¡Iniciar Duelo!
             </Button>
           </DialogFooter>
         </DialogContent>

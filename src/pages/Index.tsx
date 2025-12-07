@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,8 @@ import { AIMentor } from "@/components/AIMentor";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
 import { Navigation } from "@/components/Navigation";
-import { Flame, Target, Trophy, Plus, Battery } from "lucide-react";
+import { EnergyData, EnergyLevel } from "@/components/EnergyCheckIn";
+import { Flame, Target, Trophy, Plus, Battery, Zap, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Task {
@@ -31,13 +33,33 @@ const Index = () => {
   ]);
 
   const [newTask, setNewTask] = useState("");
+  const location = useLocation();
 
-  // Simulated energy data - in a real app this would come from context/state management
-  const [energyData] = useState({
-    energyLevel: 4 as const,
-    sleepQuality: "good" as const,
-    mood: "motivated" as const,
+  // Energy data from navigation state or default
+  const [energyData, setEnergyData] = useState<EnergyData>({
+    energyLevel: 4 as EnergyLevel,
+    sleepQuality: "good",
+    mood: "motivated",
   });
+
+  // Update energy data if coming from Energy page
+  useEffect(() => {
+    if (location.state?.energyData) {
+      setEnergyData(location.state.energyData);
+    }
+  }, [location.state]);
+
+  const getEnergyMode = () => {
+    const avg = (Number(energyData.energyLevel) + 
+      (energyData.sleepQuality === "excellent" ? 5 : energyData.sleepQuality === "good" ? 4 : energyData.sleepQuality === "fair" ? 3 : 2) + 
+      (energyData.mood === "energized" ? 5 : energyData.mood === "motivated" ? 4 : energyData.mood === "neutral" ? 3 : 2)) / 3;
+    
+    if (avg >= 4) return { mode: "sprint", label: "Modo Sprint", icon: Zap, color: "text-success", bg: "bg-success/10", bonus: "+50% XP" };
+    if (avg >= 2.5) return { mode: "normal", label: "Modo Normal", icon: Sun, color: "text-primary", bg: "bg-primary/10", bonus: "XP Normal" };
+    return { mode: "rest", label: "Modo Descanso", icon: Moon, color: "text-accent", bg: "bg-accent/10", bonus: "Tareas ligeras" };
+  };
+
+  const currentMode = getEnergyMode();
 
   const achievements = [
     { id: "1", name: "First Win", icon: "trophy" as const, unlocked: true },
@@ -107,6 +129,30 @@ const Index = () => {
                 gradient="primary"
               />
             </div>
+
+            {/* Energy Mode Banner */}
+            <Card className={`p-4 ${currentMode.bg} border-border animate-fade-in`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-xl bg-gradient-primary`}>
+                    <currentMode.icon className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-bold ${currentMode.color}`}>
+                      {currentMode.label}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {currentMode.bonus} • Tareas optimizadas según tu energía
+                    </p>
+                  </div>
+                </div>
+                <Link to="/energy">
+                  <Button variant="ghost" size="sm" className={currentMode.color}>
+                    Cambiar
+                  </Button>
+                </Link>
+              </div>
+            </Card>
 
             {/* Add Task */}
             <Card className="p-6 bg-gradient-card border-border">
