@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,30 +10,25 @@ import { AchievementBadge } from "@/components/AchievementBadge";
 import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
 import { Navigation } from "@/components/Navigation";
 import { EnergyData, EnergyLevel } from "@/components/EnergyCheckIn";
-import { Flame, Target, Trophy, Plus, Zap, Moon, Sun } from "lucide-react";
+import { Flame, Target, Trophy, Plus, Zap, Moon, Sun, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-interface Task {
-  id: string;
-  title: string;
-  xp: number;
-  category: string;
-  completed: boolean;
-  difficulty?: "easy" | "medium" | "hard";
-}
+import { useAuth } from "@/hooks/useAuth";
+import { useTasks } from "@/hooks/useTasks";
 
 const Index = () => {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", title: "Completar workout matutino", xp: 50, category: "Salud", completed: false, difficulty: "medium" },
-    { id: "2", title: "Revisar propuesta de proyecto", xp: 100, category: "Trabajo", completed: false, difficulty: "hard" },
-    { id: "3", title: "Leer 30 minutos", xp: 75, category: "Aprendizaje", completed: true, difficulty: "easy" },
-    { id: "4", title: "Planificar tareas de mañana", xp: 50, category: "Planificación", completed: false, difficulty: "easy" },
-    { id: "5", title: "Responder emails importantes", xp: 60, category: "Trabajo", completed: false, difficulty: "medium" },
-    { id: "6", title: "Meditar 10 minutos", xp: 40, category: "Bienestar", completed: false, difficulty: "easy" },
-  ]);
-
+  const { user, loading: authLoading } = useAuth();
+  const { tasks, loading: tasksLoading, addTask, toggleComplete } = useTasks();
+  const navigate = useNavigate();
+  
   const [newTask, setNewTask] = useState("");
   const location = useLocation();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   // Energy data from navigation state or default
   const [energyData, setEnergyData] = useState<EnergyData>({
@@ -69,26 +64,41 @@ const Index = () => {
   ];
 
   const handleCompleteTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    toggleComplete(id);
   };
 
   const handleAddTask = () => {
     if (newTask.trim()) {
-      setTasks([...tasks, {
-        id: Date.now().toString(),
-        title: newTask,
-        xp: 50,
-        category: "General",
-        completed: false
-      }]);
+      addTask(newTask.trim());
       setNewTask("");
     }
   };
 
+  // Transform tasks for AdaptiveTaskList (mapping priority to category/difficulty)
+  const adaptedTasks = tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    xp: t.xp,
+    category: t.priority === "high" ? "Importante" : t.priority === "medium" ? "Normal" : "Ligera",
+    completed: t.completed,
+    difficulty: t.priority === "high" ? "hard" as const : t.priority === "medium" ? "medium" as const : "easy" as const,
+  }));
+
   const completedTasks = tasks.filter(t => t.completed).length;
   const totalXP = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -175,11 +185,21 @@ const Index = () => {
             </Card>
 
             {/* Task List */}
-            <AdaptiveTaskList 
-              tasks={tasks} 
-              energyData={energyData} 
-              onComplete={handleCompleteTask}
-            />
+            {tasksLoading ? (
+              <Card className="p-8 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </Card>
+            ) : adaptedTasks.length === 0 ? (
+              <Card className="p-8 text-center text-muted-foreground">
+                No tienes tareas aún. ¡Crea tu primera misión!
+              </Card>
+            ) : (
+              <AdaptiveTaskList 
+                tasks={adaptedTasks} 
+                energyData={energyData} 
+                onComplete={handleCompleteTask}
+              />
+            )}
           </div>
 
           {/* Right Column - Energy & AI */}
