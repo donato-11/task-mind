@@ -10,7 +10,7 @@ import { AchievementBadge } from "@/components/AchievementBadge";
 import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
 import { Navigation } from "@/components/Navigation";
 import { EnergyData, EnergyLevel } from "@/components/EnergyCheckIn";
-import { Flame, Target, Trophy, Plus, Battery, Zap, Moon, Sun } from "lucide-react";
+import { Flame, Target, Trophy, Plus, Zap, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Task {
@@ -185,14 +185,14 @@ const Index = () => {
           {/* Right Column - Energy & AI */}
           <div className="space-y-6">
             {/* Energy Quick Status */}
-            <Card className="p-6 bg-gradient-card border-border">
+            <Card className={`p-6 ${currentMode.bg} border-border`}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <Battery className="w-5 h-5 text-success" />
+                <h3 className={`text-lg font-semibold flex items-center gap-2 ${currentMode.color}`}>
+                  <currentMode.icon className="w-5 h-5" />
                   Tu Energía
                 </h3>
                 <Link to="/energy">
-                  <Button variant="ghost" size="sm" className="text-primary">
+                  <Button variant="ghost" size="sm" className={currentMode.color}>
                     Actualizar
                   </Button>
                 </Link>
@@ -205,17 +205,21 @@ const Index = () => {
                         key={level}
                         className={`h-3 flex-1 rounded-full transition-all ${
                           level <= energyData.energyLevel
-                            ? "bg-success"
+                            ? currentMode.mode === "sprint" ? "bg-success" 
+                              : currentMode.mode === "normal" ? "bg-primary" 
+                              : "bg-accent"
                             : "bg-muted"
                         }`}
                       />
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Modo Sprint activo • +50% XP
+                    {currentMode.label} • {currentMode.bonus}
                   </p>
                 </div>
-                <div className="text-3xl">⚡</div>
+                <div className={`p-2 rounded-xl ${currentMode.bg}`}>
+                  <currentMode.icon className={`w-6 h-6 ${currentMode.color}`} />
+                </div>
               </div>
             </Card>
 
