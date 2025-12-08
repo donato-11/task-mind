@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Battery, Users, Sparkles, LogIn } from "lucide-react";
+import { Home, Battery, Users, Sparkles, LogIn, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { path: "/", label: "Inicio", icon: Home },
@@ -11,6 +13,16 @@ const navItems = [
 
 export const Navigation = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Sesión cerrada",
+      description: "Has cerrado sesión correctamente",
+    });
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:relative md:border-t-0 md:border-b md:bg-transparent">
@@ -50,24 +62,47 @@ export const Navigation = () => {
             );
           })}
 
-          {/* Login button - desktop */}
-          <div className="hidden md:flex md:ml-auto">
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="gap-2">
-                <LogIn className="w-4 h-4" />
-                Iniciar Sesión
-              </Button>
-            </Link>
+          {/* Auth buttons - desktop */}
+          <div className="hidden md:flex md:ml-auto items-center gap-2">
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium">{user.email?.split('@')[0]}</span>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleSignOut}>
+                  <LogOut className="w-4 h-4" />
+                  Salir
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Iniciar Sesión
+                </Button>
+              </Link>
+            )}
           </div>
 
-          {/* Login button - mobile */}
-          <Link
-            to="/auth"
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 text-muted-foreground hover:text-foreground hover:bg-muted md:hidden"
-          >
-            <LogIn className="w-5 h-5" />
-            <span className="text-xs font-medium">Entrar</span>
-          </Link>
+          {/* Auth button - mobile */}
+          {user ? (
+            <button
+              onClick={handleSignOut}
+              className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 text-muted-foreground hover:text-foreground hover:bg-muted md:hidden"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="text-xs font-medium">Salir</span>
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              className="flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-300 text-muted-foreground hover:text-foreground hover:bg-muted md:hidden"
+            >
+              <LogIn className="w-5 h-5" />
+              <span className="text-xs font-medium">Entrar</span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>

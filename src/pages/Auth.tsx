@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft } from "lucide-react";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().trim().email({ message: "Email inválido" }),
+  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
+  name: z.string().optional(),
+});
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,22 +23,80 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulación de autenticación (frontend only)
-    setTimeout(() => {
-      setIsLoading(false);
+    // Validate input
+    const validation = authSchema.safeParse({ email, password, name: isLogin ? undefined : name });
+    if (!validation.success) {
       toast({
-        title: isLogin ? "¡Bienvenido de nuevo!" : "¡Cuenta creada!",
-        description: isLogin 
-          ? "Has iniciado sesión correctamente" 
-          : "Tu cuenta ha sido creada exitosamente",
+        title: "Error de validación",
+        description: validation.error.errors[0].message,
+        variant: "destructive",
       });
-      // En una implementación real, aquí redirigirías al usuario
-    }, 1500);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          let errorMessage = error.message;
+          if (error.message.includes("Invalid login credentials")) {
+            errorMessage = "Email o contraseña incorrectos";
+          }
+          toast({
+            title: "Error al iniciar sesión",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "¡Bienvenido de nuevo!",
+            description: "Has iniciado sesión correctamente",
+          });
+          navigate("/", { replace: true });
+        }
+      } else {
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          let errorMessage = error.message;
+          if (error.message.includes("User already registered")) {
+            errorMessage = "Este email ya está registrado";
+          }
+          toast({
+            title: "Error al registrarse",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "¡Cuenta creada!",
+            description: "Tu cuenta ha sido creada exitosamente",
+          });
+          navigate("/", { replace: true });
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Ha ocurrido un error inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -78,7 +144,6 @@ const Auth = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="pl-10 bg-background border-input"
-                    required={!isLogin}
                   />
                 </div>
               </div>
@@ -146,11 +211,6 @@ const Auth = () => {
             </p>
           </div>
         </Card>
-
-        {/* Demo note */}
-        <p className="text-center text-xs text-muted-foreground">
-          Versión demo - La autenticación se simulará localmente
-        </p>
       </div>
     </div>
   );
