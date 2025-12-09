@@ -2,25 +2,26 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { XPBar } from "@/components/XPBar";
 import { StatsCard } from "@/components/StatsCard";
 import { AIMentor } from "@/components/AIMentor";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { AdaptiveTaskList } from "@/components/AdaptiveTaskList";
 import { Navigation } from "@/components/Navigation";
+import { CreateTaskForm } from "@/components/CreateTaskForm";
 import { EnergyData, EnergyLevel } from "@/components/EnergyCheckIn";
-import { Flame, Target, Trophy, Plus, Zap, Moon, Sun, Loader2 } from "lucide-react";
+import { Flame, Target, Trophy, Zap, Moon, Sun, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, CreateTaskData } from "@/hooks/useTasks";
+import { useUserStats, calculateXPForLevel } from "@/hooks/useUserStats";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { tasks, loading: tasksLoading, addTask, toggleComplete } = useTasks();
+  const { stats, loading: statsLoading, addXP, xpForNextLevel } = useUserStats();
   const navigate = useNavigate();
   
-  const [newTask, setNewTask] = useState("");
   const location = useLocation();
 
   // Redirect to auth if not logged in
@@ -63,32 +64,41 @@ const Index = () => {
     { id: "4", name: "Champion", icon: "award" as const, unlocked: false },
   ];
 
-  const handleCompleteTask = (id: string) => {
-    toggleComplete(id);
-  };
-
-  const handleAddTask = () => {
-    if (newTask.trim()) {
-      addTask(newTask.trim());
-      setNewTask("");
+  const handleCompleteTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (task && !task.completed) {
+      await toggleComplete(id);
+      addXP(task.xp);
+    } else {
+      toggleComplete(id);
     }
   };
 
-  // Transform tasks for AdaptiveTaskList (mapping priority to category/difficulty)
-  const adaptedTasks = tasks.map(t => ({
+  const handleAddTask = (data: CreateTaskData) => {
+    addTask(data);
+  };
+
+  // Transform tasks for AdaptiveTaskList
+  const adaptedTasks = tasks.map((t) => ({
     id: t.id,
     title: t.title,
     xp: t.xp,
-    category: t.priority === "high" ? "Importante" : t.priority === "medium" ? "Normal" : "Ligera",
+    category: t.label || (t.priority === "high" ? "Importante" : t.priority === "medium" ? "Normal" : "Ligera"),
     completed: t.completed,
-    difficulty: t.priority === "high" ? "hard" as const : t.priority === "medium" ? "medium" as const : "easy" as const,
+    difficulty: t.difficulty,
+    dueDate: t.due_date,
+    dueTime: t.due_time,
   }));
 
-  const completedTasks = tasks.filter(t => t.completed).length;
-  const totalXP = tasks.filter(t => t.completed).reduce((sum, t) => sum + t.xp, 0);
+  const completedTasks = tasks.filter((t) => t.completed).length;
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // User stats from database
+  const currentXP = stats?.xp ?? 0;
+  const currentLevel = stats?.level ?? 0;
+  const currentStreak = stats?.streak ?? 0;
+
+  // Show loading while checking auth or loading stats
+  if (authLoading || statsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -112,7 +122,7 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* XP Progress */}
             <Card className="p-6 bg-gradient-card border-border shadow-card">
-              <XPBar currentXP={totalXP} maxXP={500} level={5} />
+              <XPBar currentXP={currentXP} maxXP={xpForNextLevel} level={currentLevel} />
             </Card>
 
             {/* Quick Stats */}
@@ -120,8 +130,8 @@ const Index = () => {
               <StatsCard
                 icon={Flame}
                 title="Racha Actual"
-                value="5 días"
-                subtitle="¡Sigue así!"
+                value={`${currentStreak} días`}
+                subtitle={currentStreak > 0 ? "¡Sigue así!" : "¡Empieza hoy!"}
                 gradient="accent"
               />
               <StatsCard
@@ -134,8 +144,8 @@ const Index = () => {
               <StatsCard
                 icon={Trophy}
                 title="XP Total"
-                value={totalXP}
-                subtitle="Esta semana"
+                value={currentXP}
+                subtitle={`Nivel ${currentLevel}`}
                 gradient="primary"
               />
             </div>
@@ -165,24 +175,7 @@ const Index = () => {
             </Card>
 
             {/* Add Task */}
-            <Card className="p-6 bg-gradient-card border-border">
-              <h2 className="text-xl font-semibold mb-4 text-foreground">Nueva Misión</h2>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="¿Qué quieres lograr hoy?"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleAddTask}
-                  className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
+            <CreateTaskForm onSubmit={handleAddTask} />
 
             {/* Task List */}
             {tasksLoading ? (

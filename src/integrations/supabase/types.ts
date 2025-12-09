@@ -19,8 +19,11 @@ export type Database = {
           completed: boolean
           created_at: string
           description: string | null
+          difficulty: string
           due_date: string | null
+          due_time: string | null
           id: string
+          label: string | null
           priority: string
           title: string
           updated_at: string
@@ -31,8 +34,11 @@ export type Database = {
           completed?: boolean
           created_at?: string
           description?: string | null
+          difficulty?: string
           due_date?: string | null
+          due_time?: string | null
           id?: string
+          label?: string | null
           priority?: string
           title: string
           updated_at?: string
@@ -43,10 +49,46 @@ export type Database = {
           completed?: boolean
           created_at?: string
           description?: string | null
+          difficulty?: string
           due_date?: string | null
+          due_time?: string | null
           id?: string
+          label?: string | null
           priority?: string
           title?: string
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          id: string
+          last_activity_date: string | null
+          level: number
+          streak: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          streak?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          streak?: number
           updated_at?: string
           user_id?: string
           xp?: number

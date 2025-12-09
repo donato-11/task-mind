@@ -11,7 +11,20 @@ export interface Task {
   priority: "high" | "medium" | "low";
   completed: boolean;
   due_date?: string;
+  due_time?: string;
+  label?: string;
+  difficulty: "easy" | "medium" | "hard";
   created_at?: string;
+}
+
+export interface CreateTaskData {
+  title: string;
+  priority?: "high" | "medium" | "low";
+  xp?: number;
+  label?: string;
+  difficulty?: "easy" | "medium" | "hard";
+  due_date?: string;
+  due_time?: string;
 }
 
 export const useTasks = () => {
@@ -45,6 +58,9 @@ export const useTasks = () => {
           priority: t.priority as "high" | "medium" | "low",
           completed: t.completed,
           due_date: t.due_date || undefined,
+          due_time: t.due_time || undefined,
+          label: t.label || undefined,
+          difficulty: t.difficulty as "easy" | "medium" | "hard",
           created_at: t.created_at,
         }))
       );
@@ -59,17 +75,30 @@ export const useTasks = () => {
     }
   };
 
-  const addTask = async (title: string, priority: "high" | "medium" | "low" = "medium", xp: number = 50) => {
+  const addTask = async (taskData: CreateTaskData) => {
     if (!user) return;
+
+    const xpByDifficulty = {
+      easy: 25,
+      medium: 50,
+      hard: 100,
+    };
+
+    const difficulty = taskData.difficulty || "medium";
+    const xp = xpByDifficulty[difficulty];
 
     try {
       const { data, error } = await supabase
         .from("tasks")
         .insert({
           user_id: user.id,
-          title,
-          priority,
+          title: taskData.title,
+          priority: taskData.priority || "medium",
           xp,
+          label: taskData.label || null,
+          difficulty,
+          due_date: taskData.due_date || null,
+          due_time: taskData.due_time || null,
         })
         .select()
         .single();
@@ -83,6 +112,10 @@ export const useTasks = () => {
           xp: data.xp,
           priority: data.priority as "high" | "medium" | "low",
           completed: data.completed,
+          due_date: data.due_date || undefined,
+          due_time: data.due_time || undefined,
+          label: data.label || undefined,
+          difficulty: data.difficulty as "easy" | "medium" | "hard",
           created_at: data.created_at,
         },
         ...prev,
@@ -90,7 +123,7 @@ export const useTasks = () => {
 
       toast({
         title: "Tarea creada",
-        description: `"${title}" añadida con éxito`,
+        description: `"${taskData.title}" añadida con éxito`,
       });
     } catch (error: any) {
       toast({
